@@ -19,7 +19,7 @@
             const data = await response.text();
             const rows = data.split('\n').slice(1);
             
-            const globalDuration = parseInt(rows[0].split(',')[5]) * 1000 || 5000;
+            const globalDuration = parseInt(rows[1].split(',')[6]) * 1000 || 5000;
 
             let sequence = [];
             rows.forEach(row => {

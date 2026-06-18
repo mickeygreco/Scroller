@@ -4,31 +4,37 @@
     <div id="display">Loading...</div>
 
     <script>
-        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQBVaXjZ7-v24JCWovgnVfJ3o68X-S1gqrqsNzBcW9Ol3ECJL0r29yqAr1OSomBpICeey9BJx2oSsd6/pub?gid=0&single=true&output=csv'; 
+        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQBVaXjZ7-v24JCWovgnVfJ3o68X-S1gqrqsNzBcW9Ol3ECJL0r29yqAr1OSomBpICeey9BJx2oSsd6/pub?gid=0&single=true&output=csv'; // KEEP YOUR LINK HERE
 
         async function startSlideshow() {
             const response = await fetch(csvUrl);
             const data = await response.text();
             const rows = data.split('\n').slice(1);
             
-            // 1. Extract global duration from F5 (assuming F5 is in the first row after header)
-            // If F5 is just the 5th cell in the first row:
-            const globalDuration = parseInt(rows[0].split(',')[5]) * 1000;
+            // 1. Get Duration from F5 (Index 5 in the first row)
+            const globalDuration = parseInt(rows[1].split(',')[5]) * 1000 || 5000;
 
-            // 2. Interleave Column B and C (assuming index 1 and index 2)
+            // 2. Build list from rows where Column D (index 3) is TRUE
             let sequence = [];
             rows.forEach(row => {
                 let cols = row.split(',');
-                if (cols[1]?.trim()) sequence.push(cols[1].trim()); // Add B
-                if (cols[2]?.trim()) sequence.push(cols[2].trim()); // Add C
+                // Check for TRUE (checkbox state)
+                if (cols[3]?.trim().toLowerCase() === 'true') {
+                    if (cols[1]?.trim()) sequence.push(cols[1].trim()); // Add B
+                    if (cols[2]?.trim()) sequence.push(cols[2].trim()); // Add C
+                }
             });
 
-            // 3. Loop through the sequence
+            // 3. Display Loop
             let index = 0;
             function showNext() {
-                document.getElementById('display').innerText = sequence[index];
-                index = (index + 1) % sequence.length;
-                setTimeout(showNext, globalDuration);
+                if (sequence.length > 0) {
+                    document.getElementById('display').innerText = sequence[index];
+                    index = (index + 1) % sequence.length;
+                    setTimeout(showNext, globalDuration);
+                } else {
+                    document.getElementById('display').innerText = "No cards selected.";
+                }
             }
             showNext();
         }

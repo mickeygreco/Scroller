@@ -19,15 +19,20 @@
             const data = await response.text();
             const rows = data.split('\n').slice(1);
             
-            // F5 Duration (Rows[0] is index 0. F is index 5)
             const globalDuration = parseInt(rows[0].split(',')[5]) * 1000 || 5000;
 
             let sequence = [];
             rows.forEach(row => {
                 let cols = row.split(',');
-                if (cols[3]?.trim().toLowerCase() === 'true') {
-                    if (cols[1]?.trim()) sequence.push(cols[1].trim()); 
-                    if (cols[2]?.trim()) sequence.push(cols[2].trim()); 
+                // Check Column E (index 4) for TRUE
+                if (cols[4]?.trim().toLowerCase() === 'true') {
+                    // Part 1: Col C + \n\n + Col A - Col B
+                    let side1 = `${cols[2]?.trim()}\n\n${cols[0]?.trim()} - ${cols[1]?.trim()}`;
+                    // Part 2: Col D + \n\n + Col A - Col B
+                    let side2 = `${cols[3]?.trim()}\n\n${cols[0]?.trim()} - ${cols[1]?.trim()}`;
+                    
+                    sequence.push(side1);
+                    sequence.push(side2);
                 }
             });
 
@@ -38,8 +43,7 @@
                     document.getElementById('display').innerText = text;
                     
                     if (audioEnabled) {
-                        const utterance = new SpeechSynthesisUtterance(text);
-                        // Optional: Set language to Italian for your language studies
+                        const utterance = new SpeechSynthesisUtterance(text.replace(/\n/g, ' '));
                         utterance.lang = 'it-IT'; 
                         window.speechSynthesis.speak(utterance);
                     }

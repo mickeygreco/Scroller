@@ -1,17 +1,27 @@
 <!DOCTYPE html>
 <html>
-<body style="background:black; color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; font-size:5vw; font-family:sans-serif; text-align:center;">
+<body style="background:black; color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; font-size:4vw; font-family:sans-serif; text-align:center;">
     
-    <div id="display" style="margin-bottom: 20px;">Loading...</div>
-    <button id="audioToggle" onclick="toggleAudio()" style="padding: 10px 20px; font-size: 2vw; cursor: pointer;">Audio: OFF</button>
+    <div id="display" style="white-space: pre-wrap; margin-bottom: 20px;">Loading...</div>
+    
+    <div style="display: flex; gap: 10px;">
+        <button onclick="toggleAudio()" style="padding: 10px; font-size: 2vw;">Audio: OFF</button>
+        <button id="langToggle" onclick="toggleEnglish()" style="padding: 10px; font-size: 2vw;">English: ON</button>
+    </div>
 
     <script>
-        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQBVaXjZ7-v24JCWovgnVfJ3o68X-S1gqrqsNzBcW9Ol3ECJL0r29yqAr1OSomBpICeey9BJx2oSsd6/pub?gid=0&single=true&output=csv'; 
+        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQBVaXjZ7-v24JCWovgnVfJ3o68X-S1gqrqsNzBcW9Ol3ECJL0r29yqAr1OSomBpICeey9BJx2oSsd6/pub?gid=0&single=true&output=csv';
         let audioEnabled = false;
+        let showEnglish = true; // State for English translation
 
         function toggleAudio() {
             audioEnabled = !audioEnabled;
-            document.getElementById('audioToggle').innerText = audioEnabled ? "Audio: ON" : "Audio: OFF";
+            event.target.innerText = audioEnabled ? "Audio: ON" : "Audio: OFF";
+        }
+
+        function toggleEnglish() {
+            showEnglish = !showEnglish;
+            document.getElementById('langToggle').innerText = showEnglish ? "English: ON" : "English: OFF";
         }
 
         async function startSlideshow() {
@@ -19,40 +29,37 @@
             const data = await response.text();
             const rows = data.split('\n').slice(1);
             
-            const globalDuration = parseInt(rows[1].split(',')[6]) * 1000 || 5000;
+            const globalDuration = parseInt(rows[0].split(',')[5]) * 1000 || 5000;
 
             let sequence = [];
             rows.forEach(row => {
                 let cols = row.split(',');
-                // Check Column E (index 4) for TRUE
                 if (cols[4]?.trim().toLowerCase() === 'true') {
-                    // Part 1: Col C + \n\n + Col A - Col B
-                    let side1 = `${cols[2]?.trim()}\n\n${cols[0]?.trim()} - ${cols[1]?.trim()}`;
-                    // Part 2: Col D + \n\n + Col A - Col B
-                    let side2 = `${cols[3]?.trim()}\n\n${cols[0]?.trim()} - ${cols[1]?.trim()}`;
-                    
-                    sequence.push(side1);
-                    sequence.push(side2);
+                    // Logic: Store components separately so we can toggle them
+                    sequence.push({
+                        italian: cols[2]?.trim(), // Side 1
+                        english: cols[3]?.trim(), // Side 2
+                        id: `${cols[0]?.trim()} - ${cols[1]?.trim()}`
+                    });
                 }
             });
 
             let index = 0;
             function showNext() {
                 if (sequence.length > 0) {
-                    const text = sequence[index];
-                    document.getElementById('display').innerText = text;
+                    const card = sequence[index];
+                    // Conditional display based on toggle
+                    const displayEnglish = showEnglish ? `\n\n${card.english}` : "";
+                    document.getElementById('display').innerText = `${card.italian}${displayEnglish}\n\n${card.id}`;
                     
                     if (audioEnabled) {
-                        const utterance = new SpeechSynthesisUtterance(text.replace(/\n/g, ' '));
-                        utterance.lang = 'it-IT'; 
+                        const utterance = new SpeechSynthesisUtterance(card.italian);
+                        utterance.lang = 'it-IT';
                         window.speechSynthesis.speak(utterance);
                     }
                     
                     index = (index + 1) % sequence.length;
                     setTimeout(showNext, globalDuration);
-                } else {
-                    document.getElementById('display').innerText = "No cards selected.";
-                    setTimeout(showNext, 2000);
                 }
             }
             showNext();
